@@ -12,7 +12,9 @@ import java.util.HashMap;
 import java.util.List;
 import static org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_DISPOSITION;
 
-@CrossOrigin(originPatterns = "http://localhost:4200")
+/// Note, when you want to use a res header you have to Expose it by exposedHeaders={} for Expose specific headers for all methods in this controller
+/// Because the default it won't see it
+@CrossOrigin(originPatterns = "http://localhost:4200",exposedHeaders = {"X-Custom-Header","File-Name"})
 @RestController
 @RequestMapping(value = "/api/order-item")
 public class OrderItemController {
@@ -46,7 +48,7 @@ public class OrderItemController {
             ByteArrayResource resource = new ByteArrayResource(map.get(keySet.get(0)));
             return ResponseEntity.ok()
                     .header(CONTENT_DISPOSITION, "attachment; filename=\"" + keySet.get(0) + "\"")
-                    .header("FileName", keySet.get(0))
+                    .header("File-Name", keySet.get(0))
                     .contentLength(resource.contentLength())
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .body(resource);
@@ -64,7 +66,7 @@ public class OrderItemController {
             ByteArrayResource resource = new ByteArrayResource(map.get(keySet.get(0)));
             return ResponseEntity.ok()
                     .header(CONTENT_DISPOSITION, "attachment; filename=\"" + keySet.get(0) + "\"")
-                    .header("FileName", keySet.get(0))
+                    .header("File-Name", keySet.get(0))
                     .contentLength(resource.contentLength())
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .body(resource);
@@ -82,7 +84,7 @@ public class OrderItemController {
             ByteArrayResource resource = new ByteArrayResource(map.get(keySet.get(0)));
             return ResponseEntity.ok()
                     .header(CONTENT_DISPOSITION, "attachment; filename=\"" + keySet.get(0) + "\"")
-                    .header("FileName", keySet.get(0))
+                    .header("File-Name", keySet.get(0))
                     .contentLength(resource.contentLength())
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .body(resource);
