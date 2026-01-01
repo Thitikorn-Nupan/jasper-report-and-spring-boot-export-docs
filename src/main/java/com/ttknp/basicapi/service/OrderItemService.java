@@ -139,6 +139,7 @@ public class OrderItemService implements OrderItemDTO {
         parameters.put("title", "Orders History TOP 10");
         parameters.put("logoUrl", "http://www.thitikorn-nupan.com/app/ecommerce/logo.png");
         parameters.put("datetimeCondition", " ");
+        parameters.put("totalPrice", 100001.15);
         // 2. Create DataSource
         JRBeanCollectionDataSource beanCollectionDataSource = new JRBeanCollectionDataSource(orderItemsDataSource);
         // 2.2 Load Path Of Template
@@ -166,6 +167,7 @@ public class OrderItemService implements OrderItemDTO {
         parameters.put("title", "Orders History");
         parameters.put("logoUrl", "http://www.thitikorn-nupan.com/app/ecommerce/logo.png");
         parameters.put("datetimeCondition", " ");
+        parameters.put("totalPrice", 100001.15);
         // 2. Create DataSource
         JRBeanCollectionDataSource beanCollectionDataSource = new JRBeanCollectionDataSource(orderItemsDataSource);
         // 2.2 Load Path Of Template
@@ -181,24 +183,18 @@ public class OrderItemService implements OrderItemDTO {
     private byte[] ordersHistoryListJasperReportInBytesFromRootPath(String fileType, String datetime) throws Exception {
         String resourceTemplateClassPath = "classpath:report/orders_history_list_basic_template.jrxml";
         List<OrderItem> orderItemsDataSource = getOrderItemsForJasperReportWhereLikeDatetime(datetime);
-        // 0.1 Fix invalid url (Optional)
         orderItemsDataSource.forEach(orderItem -> {
             orderItem.setImageUrl(orderItem.getImageUrl().replaceAll(" ", "%20"));
         });
-        // 1. Create Required Parameters For mapping parameter tags
         Map<String, Object> parameters = new HashMap<>(); // ** can be null
         parameters.put("title", "Orders History");
         parameters.put("logoUrl", "http://www.thitikorn-nupan.com/app/ecommerce/logo.png");
         parameters.put("datetimeCondition", datetime);
-        // 2. Create DataSource
+        parameters.put("totalPrice", 100001.15);
         JRBeanCollectionDataSource beanCollectionDataSource = new JRBeanCollectionDataSource(orderItemsDataSource);
-        // 2.2 Load Path Of Template
         String path = ResourceUtils.getFile(resourceTemplateClassPath).getAbsolutePath();
-        // 3. Compile .jrmxl template, stored in JasperReport object
         JasperReport jasperReport = JasperCompileManager.compileReport(path);
-        // 4. Fill Report - by passing complied .jrxml object, parameters, datasource
         JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, beanCollectionDataSource);
-        // 5.Export Report - by using JasperExportManager
         return exportJasperReportBytes(jasperPrint, fileType);
     }
 
