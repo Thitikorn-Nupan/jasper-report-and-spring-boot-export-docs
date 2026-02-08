@@ -32,7 +32,6 @@ public class OrderItemController {
                 .body(orderItemDTO.getOrderItems());
     }
 
-
     @GetMapping(value = "/reads-for-jasper-report")
     private ResponseEntity<List<OrderItem>> readsOrderItemsForJasper() {
         return ResponseEntity.ok()
@@ -65,6 +64,7 @@ public class OrderItemController {
             List<String> keySet = map.keySet().stream().toList();
             ByteArrayResource resource = new ByteArrayResource(map.get(keySet.get(0)));
             return ResponseEntity.ok()
+                    // Set Content-Disposition to attachment for download
                     .header(CONTENT_DISPOSITION, "attachment; filename=\"" + keySet.get(0) + "\"")
                     .header("File-Name", keySet.get(0))
                     .contentLength(resource.contentLength())
@@ -75,6 +75,29 @@ public class OrderItemController {
             throw new RuntimeException("File Download Failed");
         }
     }
+
+    // @PostMapping("/preview-report")
+    @GetMapping("/preview-report") // For pdf only
+    private ResponseEntity<Resource>  previewOrderItemsAsReport()  {
+        FileType fileType = new FileType();
+        fileType.setFileExtension("PDF");
+        HashMap<String,byte[]> map = orderItemDTO.getOrderItemsHasMapReport(fileType.getFileExtension());
+        if (!map.isEmpty()) {
+            List<String> keySet = map.keySet().stream().toList();
+            ByteArrayResource resource = new ByteArrayResource(map.get(keySet.get(0)));
+            return ResponseEntity.ok()
+                    // Set Content-Disposition to inline for preview
+                    .header(CONTENT_DISPOSITION, "inline; filename=\"" + keySet.get(0) + "\"")
+                    .header("File-Name", keySet.get(0))
+                    .contentLength(resource.contentLength())
+                    .contentType(MediaType.APPLICATION_PDF) // change only contentType for review report
+                    .body(resource);
+        }
+        else {
+            throw new RuntimeException("Preview File Failed");
+        }
+    }
+
 
     @PostMapping("/reads-report/{datetime}")
     private ResponseEntity<Resource>  readsOrderItemsAsReportWhereLike(@RequestBody FileType fileType,@PathVariable String datetime)  {
