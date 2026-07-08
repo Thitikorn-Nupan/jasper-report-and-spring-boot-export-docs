@@ -1,4 +1,4 @@
-package com.ttknp.basicapi.service;
+package com.ttknp.basicapi.services;
 
 import com.ttknp.basicapi.dto.OrderItemDTO;
 import com.ttknp.basicapi.entities.OrderItem;
@@ -17,8 +17,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ResourceUtils;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,13 +39,13 @@ public class OrderItemService implements OrderItemDTO {
         return jdbcTemplate.query(sql, rowMapper);
     }
 
-    private <U> List<U> executeQuery(String sql, RowMapper<U> rowMapper,Object ...params) {
-        return jdbcTemplate.query(sql, rowMapper,params);
+    private <U> List<U> executeQuery(String sql, RowMapper<U> rowMapper, Object... params) {
+        return jdbcTemplate.query(sql, rowMapper, params);
     }
 
     @Override
     public List<OrderItem> getOrderItems() {
-        String sql = "select * from order_item;";
+        String sql = "select * from order_items;";
         return executeQuery(sql, BeanPropertyRowMapper.newInstance(OrderItem.class));
     }
 
@@ -73,11 +75,12 @@ public class OrderItemService implements OrderItemDTO {
                 "WHERE o.date_created LIKE ?\n" +  // would be '%2024-10-08%'
                 "GROUP BY oi.oi_id, oi.order_oid ;";
         log.debug("datetime: {}", datetime); // 2024-10-08
-        return executeQuery(sql, BeanPropertyRowMapper.newInstance(OrderItem.class),"%"+datetime+"%");// i have to where like because this is datetime 2025-07-07 15:43:22.994000 format
+        return executeQuery(sql, BeanPropertyRowMapper.newInstance(OrderItem.class), "%" + datetime + "%");// i have to where like because this is datetime 2025-07-07 15:43:22.994000 format
     }
 
     @Override
     public HashMap<String, byte[]> getOrderItemsHasMapReport(String fileType) {
+        long startTime = TotalTimeOnTaskService.timeStart();
         HashMap<String, byte[]> map = new HashMap<>(); // key is filename & value is file
         String fileName;
         if (fileType != null) {
@@ -99,6 +102,39 @@ public class OrderItemService implements OrderItemDTO {
                 throw new RuntimeException(e);
             }
         }
+        long durationInMs = TotalTimeOnTaskService.timeEnd(startTime);
+        log.debug("durationInMs : {}", durationInMs); // durationInMs : 3872
+        return map;
+    }
+
+    @Override
+    public HashMap<String, byte[]> getOrderItemsHasMapReportApplyThread(String fileType) {
+        long startTime = TotalTimeOnTaskService.timeStart();
+        HashMap<String, byte[]> map = new HashMap<>(); // key is filename & value is file
+        String fileName;
+        if (fileType != null) {
+            try {
+                fileName = switch (fileType) {
+                    case "CSV" -> "order_items.csv";  // Export to CSV
+                    case "XLSX" -> "order_items.xlsx"; // Export to XLSX
+                    case "HTML" -> "order_items.html"; // Export to HTML
+                    case "XML" -> "order_items.xml"; // Export to XML
+                    case "DOC" -> "order_items.doc"; // Export to DOC
+                    case "PDF" -> "order_items.pdf";// Export to PDF
+                    default -> "order_items.txt"; // Export to TXT
+                };
+                //  byte[] fileReport = ordersHistoryListJasperReportInBytesRootPath(fileType);
+                OrdersHistoryListJasperReportInBytesFromRootPathApplyThread ordersHistoryListJasperReportInBytesFromRootPathApplyThread = new OrdersHistoryListJasperReportInBytesFromRootPathApplyThread(fileType);
+                ordersHistoryListJasperReportInBytesFromRootPathApplyThread.start();
+                // wait till thread die
+                ordersHistoryListJasperReportInBytesFromRootPathApplyThread.join();
+                map.put(fileName, ordersHistoryListJasperReportInBytesFromRootPathApplyThread.fileReport);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        long durationInMs = TotalTimeOnTaskService.timeEnd(startTime);
+        log.debug("durationInMs : {}", durationInMs); // durationInMs : 2525
         return map;
     }
 
@@ -117,7 +153,7 @@ public class OrderItemService implements OrderItemDTO {
                     case "PDF" -> "order_items.pdf";
                     default -> "order_items.txt";
                 };
-                byte[] fileReport = ordersHistoryListJasperReportInBytesFromRootPath(fileType,datetime);
+                byte[] fileReport = ordersHistoryListJasperReportInBytesFromRootPath(fileType, datetime);
                 map.put(fileName, fileReport);
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -179,6 +215,51 @@ public class OrderItemService implements OrderItemDTO {
         // 5.Export Report - by using JasperExportManager
         return exportJasperReportBytes(jasperPrint, fileType);
     }
+
+    // ***
+    class OrdersHistoryListJasperReportInBytesFromRootPathApplyThread extends Thread {
+        private byte[] fileReport;
+        private final String fileType;
+
+        public OrdersHistoryListJasperReportInBytesFromRootPathApplyThread(String fileType) {
+            this.fileType = fileType;
+        }
+
+        public byte[] getFileReport() {
+            return fileReport;
+        }
+
+        @Override
+        public void run() {
+            String resourceTemplateClassPath = "classpath:report/orders_history_list_basic_template.jrxml";
+            List<OrderItem> orderItemsDataSource = getOrderItemsForJasperReport(); // getOrderItemsForJasperReport();
+            // 0.1 Fix invalid url (Optional)
+            orderItemsDataSource.forEach(orderItem -> {
+                orderItem.setImageUrl(orderItem.getImageUrl().replaceAll(" ", "%20"));
+            });
+            // 1. Create Required Parameters For mapping parameter tags
+            Map<String, Object> parameters = new HashMap<>();
+            parameters.put("title", "Orders History");
+            parameters.put("logoUrl", "http://www.thitikorn-nupan.com/app/ecommerce/logo.png");
+            parameters.put("datetimeCondition", " ");
+            parameters.put("totalPrice", 100001.15);
+            try {
+                // 2. Create DataSource
+                JRBeanCollectionDataSource beanCollectionDataSource = new JRBeanCollectionDataSource(orderItemsDataSource);
+                // 2.2 Load Path Of Template
+                String path = ResourceUtils.getFile(resourceTemplateClassPath).getAbsolutePath();
+                // 3. Compile .jrmxl template, stored in JasperReport object
+                JasperReport jasperReport = JasperCompileManager.compileReport(path);
+                // 4. Fill Report - by passing complied .jrxml object, parameters, datasource
+                JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, beanCollectionDataSource);
+                // 5.Export Report - by using JasperExportManager
+                fileReport = exportJasperReportBytes(jasperPrint, fileType);
+            } catch (FileNotFoundException | JRException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+    // ***
 
     private byte[] ordersHistoryListJasperReportInBytesFromRootPath(String fileType, String datetime) throws Exception {
         String resourceTemplateClassPath = "classpath:report/orders_history_list_basic_template.jrxml";

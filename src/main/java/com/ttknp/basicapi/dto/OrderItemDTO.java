@@ -12,5 +12,6 @@ public interface OrderItemDTO {
     List<OrderItem> getOrderItemsForJasperReportWhereLikeDatetime(String datetime);
     // For testing download file
     HashMap<String,byte[]> getOrderItemsHasMapReport(String fileType);
+    HashMap<String,byte[]> getOrderItemsHasMapReportApplyThread(String fileType);
     HashMap<String,byte[]> getOrderItemsHasMapReport(String fileType,String datetime);
 }

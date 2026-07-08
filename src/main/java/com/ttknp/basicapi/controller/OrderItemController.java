@@ -40,8 +40,26 @@ public class OrderItemController {
     }
 
     @GetMapping("/reads-report")
-    private ResponseEntity<Resource>  readsOrderItemsAsReport(@RequestParam("fileType") String fileType)  {
+    private ResponseEntity<Resource> readsOrderItemsAsReport(@RequestParam("fileType") String fileType)  {
         HashMap<String,byte[]> map = orderItemDTO.getOrderItemsHasMapReport(fileType);
+        if (!map.isEmpty()) {
+            List<String> keySet = map.keySet().stream().toList();
+            ByteArrayResource resource = new ByteArrayResource(map.get(keySet.get(0)));
+            return ResponseEntity.ok()
+                    .header(CONTENT_DISPOSITION, "attachment; filename=\"" + keySet.get(0) + "\"")
+                    .header("File-Name", keySet.get(0))
+                    .contentLength(resource.contentLength())
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(resource);
+        }
+        else {
+            throw new RuntimeException("File Download Failed");
+        }
+    }
+
+    @GetMapping("/reads-report-apply-threads")
+    private ResponseEntity<Resource> readsOrderItemsAsReportApplyThreads(@RequestParam("fileType") String fileType)  {
+        HashMap<String,byte[]> map = orderItemDTO.getOrderItemsHasMapReportApplyThread(fileType);
         if (!map.isEmpty()) {
             List<String> keySet = map.keySet().stream().toList();
             ByteArrayResource resource = new ByteArrayResource(map.get(keySet.get(0)));
