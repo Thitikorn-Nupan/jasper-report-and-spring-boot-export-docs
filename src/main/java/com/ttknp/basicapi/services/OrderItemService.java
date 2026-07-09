@@ -108,6 +108,43 @@ public class OrderItemService implements OrderItemDTO {
     }
 
     @Override
+    public byte[] getOrderItemsHasMapReportV2(String fileType) {
+        long startTime = TotalTimeOnTaskService.timeStart();
+        if (fileType != null) {
+            try {
+                return ordersHistoryListJasperReportInBytesFromRootPath(fileType); // [102, 10, 54, 49, 57, 55, 51, 49, 48, 10, 37, 37, 69, 79, 70, 10 ,...]
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            } finally {
+                long durationInMs = TotalTimeOnTaskService.timeEnd(startTime);
+                log.debug("durationInMs : {}", durationInMs); // durationInMs : 6377
+            }
+        } else {
+            throw new RuntimeException("failed print report v2");
+        }
+    }
+
+    @Override
+    public byte[] getOrderItemsHasMapReportV2ApplyThread(String fileType) {
+        long startTime = TotalTimeOnTaskService.timeStart();
+        if (fileType != null) {
+            try {
+                OrdersHistoryListJasperReportInBytesFromRootPathApplyThread ordersHistoryListJasperReportInBytesFromRootPathApplyThread = new OrdersHistoryListJasperReportInBytesFromRootPathApplyThread(fileType);
+                ordersHistoryListJasperReportInBytesFromRootPathApplyThread.start();
+                ordersHistoryListJasperReportInBytesFromRootPathApplyThread.join();
+                return ordersHistoryListJasperReportInBytesFromRootPathApplyThread.fileReport;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            } finally {
+                long durationInMs = TotalTimeOnTaskService.timeEnd(startTime);
+                log.debug("durationInMs : {}", durationInMs); // durationInMs : 4915
+            }
+        } else {
+            throw new RuntimeException("failed print report v2");
+        }
+    }
+
+    @Override
     public HashMap<String, byte[]> getOrderItemsHasMapReportApplyThread(String fileType) {
         long startTime = TotalTimeOnTaskService.timeStart();
         HashMap<String, byte[]> map = new HashMap<>(); // key is filename & value is file

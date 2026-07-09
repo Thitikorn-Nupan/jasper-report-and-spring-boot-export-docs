@@ -57,6 +57,58 @@ public class OrderItemController {
         }
     }
 
+    @GetMapping("/reads-report-v2")
+    private ResponseEntity<Resource> readsOrderItemsAsReportV2(@RequestParam("fileType") String fileType)  {
+        byte[] file = orderItemDTO.getOrderItemsHasMapReportV2(fileType);
+        String fileName = switch (fileType) {
+            case "CSV" -> "order_items.csv";  // Export to CSV
+            case "XLSX" -> "order_items.xlsx"; // Export to XLSX
+            case "HTML" -> "order_items.html"; // Export to HTML
+            case "XML" -> "order_items.xml"; // Export to XML
+            case "DOC" -> "order_items.doc"; // Export to DOC
+            case "PDF" -> "order_items.pdf";// Export to PDF
+            default -> "order_items.txt"; // Export to TXT
+        };
+        if (file != null) {
+            ByteArrayResource resource = new ByteArrayResource(file);
+            return ResponseEntity.ok()
+                    .header(CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                    .header("File-Name", fileName)
+                    .contentLength(resource.contentLength())
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(resource);
+        }
+        else {
+            throw new RuntimeException("File Download Failed");
+        }
+    }
+
+    @GetMapping("/reads-report-v2-apply-threads")
+    private ResponseEntity<Resource> readsOrderItemsAsReportV2ApplyThreads(@RequestParam("fileType") String fileType)  {
+        byte[] file = orderItemDTO.getOrderItemsHasMapReportV2ApplyThread(fileType);
+        String fileName = switch (fileType) {
+            case "CSV" -> "order_items.csv";  // Export to CSV
+            case "XLSX" -> "order_items.xlsx"; // Export to XLSX
+            case "HTML" -> "order_items.html"; // Export to HTML
+            case "XML" -> "order_items.xml"; // Export to XML
+            case "DOC" -> "order_items.doc"; // Export to DOC
+            case "PDF" -> "order_items.pdf";// Export to PDF
+            default -> "order_items.txt"; // Export to TXT
+        };
+        if (file != null) {
+            ByteArrayResource resource = new ByteArrayResource(file);
+            return ResponseEntity.ok()
+                    .header(CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                    .header("File-Name", fileName)
+                    .contentLength(resource.contentLength())
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(resource);
+        }
+        else {
+            throw new RuntimeException("File Download Failed");
+        }
+    }
+
     @GetMapping("/reads-report-apply-threads")
     private ResponseEntity<Resource> readsOrderItemsAsReportApplyThreads(@RequestParam("fileType") String fileType)  {
         HashMap<String,byte[]> map = orderItemDTO.getOrderItemsHasMapReportApplyThread(fileType);
